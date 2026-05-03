@@ -1,0 +1,14 @@
+{
+  "name": "overnightco",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "cd web && npm run dev",
+    "build": "cd web && npm run build",
+    "demo": "cd web && npx tsx scripts/trigger-demo.ts"
+  }
+}
