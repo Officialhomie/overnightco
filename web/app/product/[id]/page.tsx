@@ -1,0 +1,92 @@
+import { notFound } from "next/navigation";
+import { eq } from "drizzle-orm";
+import Link from "next/link";
+
+import { db } from "@/lib/db";
+import { products } from "@/lib/db/schema";
+import { PaywallButton } from "@/components/product/paywall-button";
+
+export const dynamic = "force-dynamic";
+
+export default async function ProductPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+
+  const [product] = await db
+    .select()
+    .from(products)
+    .where(eq(products.id, id))
+    .limit(1);
+
+  if (!product) notFound();
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+  return (
+    <main className="min-h-screen bg-[#0a0a0a] text-[#ededed]">
+      {/* Nav */}
+      <nav className="border-b border-[#27272a] px-6 py-4">
+        <Link href="/" className="text-sm text-[#71717a] hover:text-[#a1a1aa]">
+          OvernightCo
+        </Link>
+      </nav>
+
+      <div className="mx-auto max-w-3xl px-6 py-12">
+        {/* Meta */}
+        <div className="mb-4 flex flex-wrap gap-3 text-xs text-[#71717a]">
+          <span className="rounded border border-[#27272a] px-2 py-0.5">{product.niche}</span>
+          {product.publishedAt && (
+            <span>{new Date(product.publishedAt).toLocaleDateString()}</span>
+          )}
+        </div>
+
+        <h1 className="mb-4 text-3xl font-bold leading-tight">{product.title}</h1>
+        <p className="mb-8 text-lg text-[#a1a1aa]">{product.teaser}</p>
+
+        {/* Paywall */}
+        {product.status === "LIVE" && !product.humanHtml ? (
+          <PaywallButton productId={product.id} priceUsdc={product.humanPriceUsdc} />
+        ) : product.status === "LIVE" && product.humanHtml ? (
+          <>
+            {/* For demo: show content without paywall (can gate this later) */}
+            <div
+              className="prose prose-invert max-w-none"
+              dangerouslySetInnerHTML={{ __html: product.humanHtml }}
+            />
+          </>
+        ) : (
+          <div className="rounded border border-[#27272a] bg-[#111111] p-8 text-center text-sm text-[#71717a]">
+            {product.status === "BUILDING" ? "Building..." : "This product is not yet available."}
+          </div>
+        )}
+
+        {/* Agent tier CTA */}
+        <div className="mt-12 rounded-lg border border-[#1d4ed8]/30 bg-[#1e3a8a]/10 p-4">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#3b82f6]">
+            Agent tier
+          </div>
+          <p className="mb-3 text-sm text-[#a1a1aa]">
+            AI agent? Get structured JSON data for ${product.agentPriceUsdc} USDC.
+          </p>
+          <div className="flex gap-3 text-xs">
+            <a
+              href={`/product/${product.id}/skill.md`}
+              className="rounded border border-[#27272a] px-3 py-1.5 text-[#a1a1aa] hover:text-[#ededed]"
+            >
+              skill.md
+            </a>
+            <a
+              href={`/product/${product.id}/data.json`}
+              className="rounded border border-[#27272a] px-3 py-1.5 text-[#a1a1aa] hover:text-[#ededed]"
+            >
+              data.json (402 gated)
+            </a>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
