@@ -14,6 +14,7 @@ export function PaywallButton({ productId, priceUsdc }: PaywallButtonProps) {
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
 
   async function handleSubscribe() {
     setStep("creating");
@@ -37,7 +38,6 @@ export function PaywallButton({ productId, priceUsdc }: PaywallButtonProps) {
       setSessionId(data.sessionId ?? null);
       setStep("polling");
 
-      // Open Locus checkout in new tab
       window.open(data.checkoutUrl, "_blank", "noopener");
     } catch {
       setErrorMsg("Network error");
@@ -47,6 +47,9 @@ export function PaywallButton({ productId, priceUsdc }: PaywallButtonProps) {
 
   async function handleConfirm() {
     if (!sessionId) return;
+
+    setVerifying(true);
+    setErrorMsg(null);
 
     try {
       const res = await fetch(`/api/product/${productId}/subscribe/confirm`, {
@@ -58,19 +61,24 @@ export function PaywallButton({ productId, priceUsdc }: PaywallButtonProps) {
 
       if (res.ok && data.success) {
         setStep("done");
-        // Reload to show content
         window.location.reload();
       } else {
         setErrorMsg(data.error ?? "Payment not confirmed yet");
       }
     } catch {
       setErrorMsg("Network error verifying payment");
+    } finally {
+      setVerifying(false);
     }
   }
 
   if (step === "done") {
     return (
-      <div className="rounded border border-[#22c55e]/30 bg-[#052e16]/40 p-4 text-sm text-[#22c55e]">
+      <div
+        className="rounded border border-[#22c55e]/30 bg-[#052e16]/40 p-4 text-sm text-[#22c55e]"
+        role="status"
+        aria-live="polite"
+      >
         Payment confirmed. Loading your content...
       </div>
     );
@@ -88,57 +96,69 @@ export function PaywallButton({ productId, priceUsdc }: PaywallButtonProps) {
         ${priceUsdc} <span className="text-sm text-[#71717a]">USDC</span>
       </div>
 
-      {step === "idle" && (
-        <button
-          onClick={handleSubscribe}
-          className="w-full rounded border border-[#f59e0b] bg-[#f59e0b] px-6 py-2.5 text-sm font-semibold text-[#1c1917] transition-opacity hover:opacity-90"
-        >
-          Subscribe for ${priceUsdc}
-        </button>
-      )}
+      <div aria-live="polite" aria-atomic="true" className="min-h-10">
+        {step === "idle" && (
+          <button
+            type="button"
+            onClick={handleSubscribe}
+            className="min-h-11 w-full rounded border border-[#f59e0b] bg-[#f59e0b] px-6 py-2.5 text-sm font-semibold text-[#1c1917] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f59e0b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
+          >
+            Subscribe for ${priceUsdc}
+          </button>
+        )}
 
-      {step === "creating" && (
-        <div className="text-sm text-[#71717a]">Creating checkout session...</div>
-      )}
-
-      {step === "polling" && (
-        <div>
-          <p className="mb-4 text-sm text-[#a1a1aa]">
-            Complete your payment in the Locus checkout window, then click below.
+        {step === "creating" && (
+          <p className="text-sm text-[#71717a]" role="status">
+            Creating checkout session...
           </p>
-          <div className="flex gap-3">
-            {checkoutUrl && (
-              <a
-                href={checkoutUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 rounded border border-[#27272a] px-4 py-2.5 text-center text-sm text-[#a1a1aa] hover:text-[#ededed]"
+        )}
+
+        {step === "polling" && (
+          <div>
+            <p className="mb-4 text-sm text-[#a1a1aa]">
+              Complete your payment in the Locus checkout window, then click below.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              {checkoutUrl && (
+                <a
+                  href={checkoutUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="min-h-11 flex-1 rounded border border-[#27272a] px-4 py-2.5 text-center text-sm text-[#a1a1aa] hover:text-[#ededed] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22c55e] focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
+                >
+                  Open checkout
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={handleConfirm}
+                disabled={verifying}
+                aria-busy={verifying}
+                className="min-h-11 flex-1 rounded border border-[#22c55e] bg-[#22c55e] px-4 py-2.5 text-sm font-semibold text-[#052e16] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22c55e] focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111] disabled:opacity-50"
               >
-                Open checkout
-              </a>
-            )}
+                {verifying ? "Verifying…" : "I paid — verify"}
+              </button>
+            </div>
+            {errorMsg && <p className="mt-3 text-xs text-[#f59e0b]">{errorMsg}</p>}
+          </div>
+        )}
+
+        {step === "error" && (
+          <div>
+            <p className="mb-3 text-sm text-[#ef4444]">{errorMsg}</p>
             <button
-              onClick={handleConfirm}
-              className="flex-1 rounded border border-[#22c55e] bg-[#22c55e] px-4 py-2.5 text-sm font-semibold text-[#052e16] transition-opacity hover:opacity-90"
+              type="button"
+              onClick={() => {
+                setStep("idle");
+                setErrorMsg(null);
+              }}
+              className="text-xs text-[#71717a] underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#71717a] focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
             >
-              I paid — verify
+              Try again
             </button>
           </div>
-          {errorMsg && <p className="mt-3 text-xs text-[#f59e0b]">{errorMsg}</p>}
-        </div>
-      )}
-
-      {step === "error" && (
-        <div>
-          <p className="mb-3 text-sm text-[#ef4444]">{errorMsg}</p>
-          <button
-            onClick={() => { setStep("idle"); setErrorMsg(null); }}
-            className="text-xs text-[#71717a] underline"
-          >
-            Try again
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
