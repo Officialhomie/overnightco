@@ -23,18 +23,16 @@ export default async function ProductPage({
 
   if (!product) notFound();
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-[#ededed]">
       {/* Nav */}
-      <nav className="border-b border-[#27272a] px-6 py-4">
-        <Link href="/" className="text-sm text-[#71717a] hover:text-[#a1a1aa]">
+      <nav className="border-b border-[#27272a] px-4 py-4 sm:px-6">
+        <Link href="/" className="text-sm text-[#71717a] hover:text-[#a1a1aa] focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22c55e] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]">
           OvernightCo
         </Link>
       </nav>
 
-      <div className="mx-auto max-w-3xl px-6 py-12">
+      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-12">
         {/* Meta */}
         <div className="mb-4 flex flex-wrap gap-3 text-xs text-[#71717a]">
           <span className="rounded border border-[#27272a] px-2 py-0.5">{product.niche}</span>
@@ -43,7 +41,7 @@ export default async function ProductPage({
           )}
         </div>
 
-        <h1 className="mb-4 text-3xl font-bold leading-tight">{product.title}</h1>
+        <h1 className="mb-4 text-2xl font-bold leading-tight sm:text-3xl">{product.title}</h1>
         <p className="mb-8 text-lg text-[#a1a1aa]">{product.teaser}</p>
 
         {/* Paywall */}
@@ -52,8 +50,8 @@ export default async function ProductPage({
         ) : product.status === "LIVE" && product.humanHtml ? (
           <>
             {/* For demo: show content without paywall (can gate this later) */}
-            <div
-              className="prose prose-invert max-w-none"
+            <article
+              className="prose prose-invert prose-sm sm:prose-base mx-auto max-w-prose prose-headings:font-bold prose-headings:tracking-tight prose-p:text-[#d4d4d8] prose-a:text-[#22c55e] prose-a:no-underline hover:prose-a:underline prose-strong:text-[#ededed] prose-code:rounded prose-code:bg-[#18181b] prose-code:px-1 prose-code:py-0.5 prose-code:text-[#a1a1aa] prose-pre:border prose-pre:border-[#27272a] prose-pre:bg-[#111111]"
               dangerouslySetInnerHTML={{ __html: product.humanHtml }}
             />
           </>
@@ -71,16 +69,16 @@ export default async function ProductPage({
           <p className="mb-3 text-sm text-[#a1a1aa]">
             AI agent? Get structured JSON data for ${product.agentPriceUsdc} USDC.
           </p>
-          <div className="flex gap-3 text-xs">
+          <div className="flex flex-wrap gap-2 text-xs sm:gap-3">
             <a
               href={`/product/${product.id}/skill.md`}
-              className="rounded border border-[#27272a] px-3 py-1.5 text-[#a1a1aa] hover:text-[#ededed]"
+              className="rounded border border-[#27272a] px-3 py-1.5 text-[#a1a1aa] hover:text-[#ededed] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22c55e] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]"
             >
               skill.md
             </a>
             <a
               href={`/product/${product.id}/data.json`}
-              className="rounded border border-[#27272a] px-3 py-1.5 text-[#a1a1aa] hover:text-[#ededed]"
+              className="rounded border border-[#27272a] px-3 py-1.5 text-[#a1a1aa] hover:text-[#ededed] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22c55e] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]"
             >
               data.json (402 gated)
             </a>
