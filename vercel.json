@@ -1,3 +1,12 @@
 {
-  "rootDirectory": "web"
+  "crons": [
+    {
+      "path": "/api/internal/build",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/internal/report",
+      "schedule": "0 8 * * *"
+    }
+  ]
 }
