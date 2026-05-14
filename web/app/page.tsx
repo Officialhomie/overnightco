@@ -31,7 +31,7 @@ export default async function LandingPage() {
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-[#ededed]">
       {/* Hero */}
-      <section className="border-b border-[#27272a] px-6 py-20 text-center">
+      <section className="border-b border-[#27272a] px-4 py-16 text-center sm:px-6 sm:py-20">
         <div className="mx-auto max-w-3xl">
           <div className="mb-4 inline-block rounded border border-[#22c55e]/30 bg-[#22c55e]/10 px-3 py-1 text-xs text-[#22c55e]">
             Locus Paygentic Week 4
@@ -48,18 +48,18 @@ export default async function LandingPage() {
 
           {/* Stats bar */}
           {pnl && (
-            <div className="mb-10 flex justify-center gap-8 text-sm">
-              <div>
-                <div className="text-[#22c55e] font-bold">${pnl.revenueUsdc}</div>
+            <div className="mb-10 flex flex-col items-center gap-6 text-sm sm:flex-row sm:justify-center sm:gap-8">
+              <div className="text-center">
+                <div className="font-bold text-[#22c55e]">${pnl.revenueUsdc}</div>
                 <div className="text-[#71717a]">revenue</div>
               </div>
-              <div className="border-l border-[#27272a]" />
-              <div>
-                <div className="text-[#ef4444] font-bold">${pnl.costsUsdc}</div>
+              <div className="hidden h-10 w-px bg-[#27272a] sm:block" aria-hidden />
+              <div className="text-center">
+                <div className="font-bold text-[#ef4444]">${pnl.costsUsdc}</div>
                 <div className="text-[#71717a]">costs</div>
               </div>
-              <div className="border-l border-[#27272a]" />
-              <div>
+              <div className="hidden h-10 w-px bg-[#27272a] sm:block" aria-hidden />
+              <div className="text-center">
                 <div className={`font-bold ${parseFloat(pnl.profitUsdc) >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
                   ${pnl.profitUsdc}
                 </div>
@@ -73,7 +73,7 @@ export default async function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section className="border-b border-[#27272a] px-6 py-16">
+      <section className="border-b border-[#27272a] px-4 py-14 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-3xl">
           <h2 className="mb-10 text-sm font-semibold uppercase tracking-widest text-[#71717a]">
             How it works
@@ -116,7 +116,7 @@ export default async function LandingPage() {
 
       {/* Live products */}
       {liveProducts.length > 0 && (
-        <section className="border-b border-[#27272a] px-6 py-16">
+        <section className="border-b border-[#27272a] px-4 py-14 sm:px-6 sm:py-16">
           <div className="mx-auto max-w-3xl">
             <h2 className="mb-8 text-sm font-semibold uppercase tracking-widest text-[#71717a]">
               Live products
@@ -146,11 +146,11 @@ export default async function LandingPage() {
       )}
 
       {/* Footer */}
-      <footer className="px-6 py-8 text-center text-xs text-[#71717a]">
-        <div className="flex justify-center gap-4">
-          <Link href="/api/catalog" className="hover:text-[#a1a1aa]">/api/catalog</Link>
-          <Link href="/llms.txt" className="hover:text-[#a1a1aa]">/llms.txt</Link>
-          <Link href="/dashboard" className="hover:text-[#a1a1aa]">dashboard</Link>
+      <footer className="px-4 py-8 text-center text-xs text-[#71717a] sm:px-6">
+        <div className="flex flex-wrap justify-center gap-x-4 gap-y-2">
+          <Link href="/api/catalog" className="rounded-sm hover:text-[#a1a1aa] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22c55e] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]">/api/catalog</Link>
+          <Link href="/llms.txt" className="rounded-sm hover:text-[#a1a1aa] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22c55e] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]">/llms.txt</Link>
+          <Link href="/dashboard" className="rounded-sm hover:text-[#a1a1aa] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22c55e] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]">dashboard</Link>
         </div>
         <div className="mt-3">Built for Locus Paygentic Week 4</div>
       </footer>
