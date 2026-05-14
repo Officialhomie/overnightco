@@ -25,17 +25,17 @@ export function DecisionLog({ decisions }: DecisionLogProps) {
               key={d.id}
               className="rounded-lg border border-[#27272a] bg-[#111111] p-4"
             >
-              <div className="mb-2 flex items-center gap-2">
+              <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span
-                  className={`rounded border px-2 py-0.5 text-xs font-semibold ${PHASE_COLORS[d.phase] ?? "text-[#a1a1aa] border-[#27272a]"}`}
+                  className={`shrink-0 rounded border px-2 py-0.5 text-xs font-semibold ${PHASE_COLORS[d.phase] ?? "text-[#a1a1aa] border-[#27272a]"}`}
                 >
                   {d.phase}
                 </span>
-                <span className="text-xs text-[#52525b]">
+                <span className="shrink-0 text-xs text-[#52525b]">
                   {new Date(d.createdAt).toLocaleTimeString()}
                 </span>
                 {d.costUsdc && (
-                  <span className="ml-auto text-xs text-[#ef4444]">
+                  <span className="text-xs text-[#ef4444] sm:ml-auto">
                     ${d.costUsdc}
                   </span>
                 )}
