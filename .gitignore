@@ -5,3 +5,8 @@ dist/
 .env.*.local
 *.log
 *.tsbuildinfo
+
+# Local working docs (do not version)
+API_TESTS.md
+ARCHITECTURE.md
+GAP_REPORT.md
