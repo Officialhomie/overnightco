@@ -72,15 +72,9 @@ export async function runBuildPhase(
       })
       .where(eq(products.id, productId));
 
-    // Insert a COST_BUILD transaction summarising build costs
-    await db.insert(transactions).values({
-      type: "COST_BUILD",
-      amountUsdc: pipeline.totalCostUsdc,
-      productId,
-      cycleId,
-      description: `Build phase: research + write for "${pipeline.title}"`,
-      metadata: JSON.stringify(pipeline.costBreakdown),
-    });
+    // NOTE: individual COST_EXA and COST_CLAUDE rows are already inserted by
+    // wrapped-apis.ts on each call. Do NOT insert a COST_BUILD aggregate here —
+    // it would double-count all build costs in the P&L calculator.
 
     // Log BUILD decision to AI decisions table
     await db.insert(aiDecisions).values({
