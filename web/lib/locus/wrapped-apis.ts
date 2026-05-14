@@ -8,7 +8,7 @@ import { transactions } from "@/lib/db/schema";
 export interface ExaSearchResult {
   title: string;
   url: string;
-  snippet: string;
+  text: string;
   publishedDate?: string;
 }
 
@@ -18,13 +18,23 @@ export interface WrappedApiResult<T> {
   locusTransactionId?: string;
 }
 
-function extractCost(response: Record<string, unknown>): string {
-  // Locus Wrapped API should return the cost deducted from wallet
+function extractExaCost(data: Record<string, unknown>): string {
+  // Confirmed field: data.costDollars.total (nested object)
+  const costDollars = data.costDollars as Record<string, unknown> | undefined;
+  const total = typeof costDollars?.total === "number" ? costDollars.total : 0;
+  return total.toFixed(6);
+}
+
+const HAIKU_INPUT_COST_PER_TOKEN = 0.00000025; // $0.25 / 1M tokens
+const HAIKU_OUTPUT_COST_PER_TOKEN = 0.00000125; // $1.25 / 1M tokens
+
+function extractClaudeCost(data: Record<string, unknown>): string {
+  // Confirmed: no cost field in response — calculate from usage tokens
+  const usage = data.usage as Record<string, unknown> | undefined;
+  const inputTokens = typeof usage?.input_tokens === "number" ? usage.input_tokens : 0;
+  const outputTokens = typeof usage?.output_tokens === "number" ? usage.output_tokens : 0;
   const cost =
-    (typeof response.cost_usdc === "number" && response.cost_usdc) ||
-    (typeof response.costUsdc === "number" && response.costUsdc) ||
-    (typeof response.amount_deducted === "number" && response.amount_deducted) ||
-    0;
+    inputTokens * HAIKU_INPUT_COST_PER_TOKEN + outputTokens * HAIKU_OUTPUT_COST_PER_TOKEN;
   return cost.toFixed(6);
 }
 
@@ -72,13 +82,13 @@ export async function callExa(
       {
         title: `[Mock] Latest trends in ${query}`,
         url: "https://example.com/article-1",
-        snippet: "This is a mock research result for demo purposes.",
+        text: "This is a mock research result for demo purposes.",
         publishedDate: new Date().toISOString(),
       },
       {
         title: `[Mock] Analysis: ${query}`,
         url: "https://example.com/article-2",
-        snippet: "Another mock result showing key data points.",
+        text: "Another mock result showing key data points.",
         publishedDate: new Date().toISOString(),
       },
     ];
@@ -98,12 +108,13 @@ export async function callExa(
 
   const client = new LocusClient();
 
-  // Locus Wrapped API call — path TBC, defensive structure
-  const res = await client.request<Record<string, unknown>>("/wrapped/exa", {
+  // Confirmed path: /wrapped/exa/search
+  const res = await client.request<Record<string, unknown>>("/wrapped/exa/search", {
     method: "POST",
     body: JSON.stringify({
       query,
       numResults: opts.numResults ?? 5,
+      contents: { text: { maxCharacters: 800 } },
     }),
   });
 
@@ -113,10 +124,10 @@ export async function callExa(
   }
 
   const data = res.data as Record<string, unknown>;
-  const costUsdc = extractCost(data);
+  const costUsdc = extractExaCost(data);
   const locusTransactionId = extractTransactionId(data);
 
-  // Extract results — defensive field picking for beta API instability
+  // Extract results — confirmed response structure: data.results[]
   const rawResults =
     (Array.isArray(data.results) && data.results) ||
     (Array.isArray(data.data) && data.data) ||
@@ -125,7 +136,8 @@ export async function callExa(
   const results: ExaSearchResult[] = rawResults.map((r: Record<string, unknown>) => ({
     title: String(r.title ?? r.name ?? ""),
     url: String(r.url ?? r.link ?? ""),
-    snippet: String(r.snippet ?? r.text ?? r.description ?? ""),
+    // Confirmed: text field populated when contents.text requested; snippet is empty without it
+    text: String(r.text ?? r.snippet ?? r.description ?? ""),
     publishedDate: typeof r.publishedDate === "string" ? r.publishedDate : undefined,
   }));
 
@@ -150,7 +162,7 @@ export async function callExa(
  * Call Claude via Locus Wrapped APIs.
  * Each call deducts USDC from the agent wallet and records a COST_CLAUDE transaction.
  *
- * NOTE: Exact endpoint path TBC — verify against Locus docs on Day 1.
+ * Confirmed path: /wrapped/anthropic/chat (verified Day 1).
  */
 export async function callClaude(
   prompt: string,
@@ -182,7 +194,7 @@ export async function callClaude(
 
   const messages = [{ role: "user", content: prompt }];
   const body: Record<string, unknown> = {
-    model: opts.model ?? "claude-sonnet-4-6",
+    model: opts.model ?? "claude-haiku-4-5-20251001",
     messages,
     max_tokens: opts.maxTokens ?? 2000,
   };
@@ -190,7 +202,8 @@ export async function callClaude(
     body.system = opts.systemPrompt;
   }
 
-  const res = await client.request<Record<string, unknown>>("/wrapped/anthropic", {
+  // Confirmed path: /wrapped/anthropic/chat
+  const res = await client.request<Record<string, unknown>>("/wrapped/anthropic/chat", {
     method: "POST",
     body: JSON.stringify(body),
   });
@@ -201,7 +214,8 @@ export async function callClaude(
   }
 
   const data = res.data as Record<string, unknown>;
-  const costUsdc = extractCost(data);
+  // Confirmed: no cost field in response — calculate from usage.input_tokens + usage.output_tokens
+  const costUsdc = extractClaudeCost(data);
   const locusTransactionId = extractTransactionId(data);
 
   // Extract content — defensive for Anthropic response envelope
