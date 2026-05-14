@@ -14,11 +14,11 @@ export interface WrittenContent {
 
 function formatResearchForPrompt(research: ResearchResult): string {
   const stories = research.topStories
-    .map((s, i) => `${i + 1}. ${s.title}\n   ${s.snippet}\n   Source: ${s.url}`)
+    .map((s, i) => `${i + 1}. ${s.title}\n   ${s.text}\n   Source: ${s.url}`)
     .join("\n\n");
 
   const dataPoints = research.dataPoints
-    .map((d, i) => `${i + 1}. ${d.title}\n   ${d.snippet}`)
+    .map((d, i) => `${i + 1}. ${d.title}\n   ${d.text}`)
     .join("\n\n");
 
   return `TOP STORIES:\n${stories}\n\nDATA POINTS:\n${dataPoints}`;
