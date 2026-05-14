@@ -1,4 +1,5 @@
 import { desc, eq } from "drizzle-orm";
+import Link from "next/link";
 
 import { db } from "@/lib/db";
 import { businessCycles, aiDecisions, transactions, products } from "@/lib/db/schema";
@@ -46,14 +47,16 @@ export default async function DashboardPage() {
     ]);
 
   return (
-    <div className="px-8 py-8">
+    <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <div className="mb-8">
         <h1 className="text-xl font-bold">P&L Dashboard</h1>
         {latestCycle && (
-          <p className="mt-1 text-sm text-[#71717a]">
-            Current niche: {latestCycle.ownerInput}
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-[#71717a]">
+            <span>
+              Current niche: {latestCycle.ownerInput}
+            </span>
             {latestCycle.cycleDecision && (
-              <span className="ml-3 rounded border border-[#27272a] px-2 py-0.5 text-xs">
+              <span className="rounded border border-[#27272a] px-2 py-0.5 text-xs">
                 {latestCycle.cycleDecision}
               </span>
             )}
@@ -61,40 +64,63 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      {/* P&L cards */}
       <PnlCards today={today} allTime={allTime} />
 
       <div className="mt-10 grid gap-8 lg:grid-cols-2">
-        {/* AI Decision log */}
         <DecisionLog decisions={recentDecisions} />
-
-        {/* Transaction feed */}
         <TransactionFeed transactions={recentTransactions} />
       </div>
 
-      {/* Live products */}
       {liveProducts.length > 0 && (
         <div className="mt-10">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-[#71717a]">
             Live products
           </h2>
-          <div className="overflow-hidden rounded-lg border border-[#27272a]">
-            <table className="w-full text-sm">
+
+          <div className="space-y-3 md:hidden">
+            {liveProducts.map((p) => (
+              <Link
+                key={p.id}
+                href={`/product/${p.id}`}
+                className="block rounded-lg border border-[#27272a] bg-[#111111] p-4 transition-colors hover:border-[#3f3f46] hover:bg-[#1a1a1a]"
+              >
+                <div className="mb-1 text-xs text-[#71717a]">{p.niche}</div>
+                <div className="mb-2 font-medium text-[#22c55e]">{p.title}</div>
+                <div className="flex flex-wrap justify-between gap-2 text-xs text-[#a1a1aa]">
+                  <span>Build ${p.totalCostUsdc}</span>
+                  <span className="text-[#71717a]">
+                    {p.publishedAt ? new Date(p.publishedAt).toLocaleDateString() : "—"}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="hidden overflow-x-auto rounded-lg border border-[#27272a] md:block">
+            <table className="w-full min-w-[520px] text-sm">
               <thead>
                 <tr className="border-b border-[#27272a] bg-[#111111]">
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#71717a]">Title</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#71717a]">Niche</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-[#71717a]">Build cost</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-[#71717a]">Published</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#71717a]">
+                    Title
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#71717a]">
+                    Niche
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-[#71717a]">
+                    Build cost
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-[#71717a]">
+                    Published
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {liveProducts.map((p) => (
                   <tr key={p.id} className="border-b border-[#27272a] last:border-0 hover:bg-[#111111]">
                     <td className="px-4 py-3">
-                      <a href={`/product/${p.id}`} className="text-[#22c55e] hover:underline">
+                      <Link href={`/product/${p.id}`} className="text-[#22c55e] hover:underline">
                         {p.title}
-                      </a>
+                      </Link>
                     </td>
                     <td className="px-4 py-3 text-[#a1a1aa]">{p.niche}</td>
                     <td className="px-4 py-3 text-right text-[#a1a1aa]">${p.totalCostUsdc}</td>
