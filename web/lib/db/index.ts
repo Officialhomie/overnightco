@@ -6,7 +6,7 @@ import * as schema from "./schema";
 
 // WebSocket polyfill for local dev and scripts only.
 // Vercel serverless has native WebSocket — setting ws there causes "b.mask is not a function".
-if (typeof WebSocket === "undefined") {
+if (!process.env.VERCEL) {
   neonConfig.webSocketConstructor = ws;
 }
 
