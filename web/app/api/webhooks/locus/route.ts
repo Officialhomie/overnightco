@@ -1,7 +1,7 @@
 import "server-only";
 
 import crypto from "node:crypto";
-import { eq, and, isNotNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
@@ -38,7 +38,15 @@ function verifyLocusSignature(
 }
 
 function pickSessionId(payload: Record<string, unknown>): string | undefined {
+  // Locus v1 nests fields under data: { event: "checkout.session.paid", data: { sessionId } }
+  const dataObj =
+    typeof payload.data === "object" && payload.data !== null
+      ? (payload.data as Record<string, unknown>)
+      : null;
+
   const candidates = [
+    dataObj?.sessionId,
+    dataObj?.session_id,
     payload.sessionId,
     payload.session_id,
     payload.checkoutSessionId,
@@ -52,7 +60,15 @@ function pickSessionId(payload: Record<string, unknown>): string | undefined {
 }
 
 function pickTransactionId(payload: Record<string, unknown>): string | null {
+  const dataObj =
+    typeof payload.data === "object" && payload.data !== null
+      ? (payload.data as Record<string, unknown>)
+      : null;
+
   const candidates = [
+    dataObj?.paymentTxHash,
+    dataObj?.transactionId,
+    dataObj?.transaction_id,
     payload.transactionId,
     payload.transaction_id,
     payload.paymentId,
@@ -64,12 +80,15 @@ function pickTransactionId(payload: Record<string, unknown>): string | null {
   return null;
 }
 
-function pickStatus(payload: Record<string, unknown>): string {
-  return (
+function isPaymentConfirmed(payload: Record<string, unknown>): boolean {
+  // Locus sends event = "checkout.session.paid" when payment completes
+  if (payload.event === "checkout.session.paid") return true;
+  // Fallback: legacy status field
+  const status =
     (typeof payload.status === "string" && payload.status) ||
     (typeof payload.paymentStatus === "string" && payload.paymentStatus) ||
-    "PENDING"
-  );
+    "";
+  return status.toUpperCase() === "CONFIRMED";
 }
 
 /** GET — Locus webhook verification handshake. */
@@ -88,12 +107,15 @@ export async function GET(req: Request) {
 /**
  * POST — Locus payment event handler.
  *
- * On CONFIRMED for an accessGrant:
+ * On payment confirmed for an accessGrant:
  * - Set confirmedAt
  * - Generate HMAC accessToken
  * - Insert REVENUE_HUMAN or REVENUE_AGENT transaction
  *
  * Returns 200 in all non-signature-failure cases.
+ *
+ * Signature verification uses the per-session whsec_ stored at subscribe time,
+ * falling back to LOCUS_WEBHOOK_SECRET env var if not present.
  */
 export async function POST(req: Request) {
   const rawBuffer = await req.arrayBuffer();
@@ -107,55 +129,51 @@ export async function POST(req: Request) {
     return new NextResponse("OK", { status: 200 });
   }
 
-  // Verify signature
-  const secret = process.env.LOCUS_WEBHOOK_SECRET?.trim();
-  if (!secret) {
-    if (process.env.NODE_ENV === "production") {
-      logger.error("locus.webhook.CRITICAL_no_secret_configured");
-    }
-    logger.warn("locus.webhook.no_secret_skipping_verification");
-  } else {
-    const sigHeader =
-      req.headers.get("x-locus-signature") ??
-      req.headers.get("x-webhook-signature") ??
-      req.headers.get("x-signature-256");
-
-    if (!sigHeader) {
-      logger.warn("locus.webhook.rejected_missing_signature");
-      return new NextResponse("Signature header required", { status: 401 });
-    }
-    if (!verifyLocusSignature(raw, sigHeader, secret)) {
-      logger.warn("locus.webhook.rejected_invalid_signature");
-      return new NextResponse("Invalid signature", { status: 401 });
-    }
-  }
-
+  // Extract sessionId first — needed to look up per-session webhook secret
   const sessionId = pickSessionId(payload);
   if (!sessionId) {
     logger.warn("locus.webhook_missing_session_id");
     return new NextResponse("OK", { status: 200 });
   }
 
-  const rawStatus = pickStatus(payload);
   const locusTransactionId = pickTransactionId(payload);
 
-  // Only act on CONFIRMED
-  if (rawStatus.toUpperCase() !== "CONFIRMED") {
-    logger.info("locus.webhook_non_confirmed", { sessionId, rawStatus });
-    return new NextResponse("OK", { status: 200 });
-  }
-
-  // Look up the access grant by locus session ID (not yet confirmed)
+  // Look up the grant early — we need its webhookSecret for signature verification
   const [grant] = await db
     .select()
     .from(accessGrants)
-    .where(
-      and(
-        eq(accessGrants.locusSessionId, sessionId),
-        isNotNull(accessGrants.productId),
-      ),
-    )
+    .where(eq(accessGrants.locusSessionId, sessionId))
     .limit(1);
+
+  // Verify signature using per-session secret, falling back to env var
+  const secret =
+    grant?.webhookSecret?.trim() ?? process.env.LOCUS_WEBHOOK_SECRET?.trim();
+  if (secret) {
+    const sigHeader =
+      req.headers.get("x-locus-signature") ??
+      req.headers.get("x-webhook-signature") ??
+      req.headers.get("x-signature-256");
+
+    if (!sigHeader) {
+      logger.warn("locus.webhook.rejected_missing_signature", { sessionId });
+      return new NextResponse("Signature header required", { status: 401 });
+    }
+    if (!verifyLocusSignature(raw, sigHeader, secret)) {
+      logger.warn("locus.webhook.rejected_invalid_signature", { sessionId });
+      return new NextResponse("Invalid signature", { status: 401 });
+    }
+  } else {
+    logger.warn("locus.webhook.no_secret_skipping_verification", { sessionId });
+  }
+
+  // Only act on confirmed payments
+  if (!isPaymentConfirmed(payload)) {
+    logger.info("locus.webhook_non_confirmed", {
+      sessionId,
+      event: payload.event,
+    });
+    return new NextResponse("OK", { status: 200 });
+  }
 
   if (!grant) {
     logger.info("locus.webhook_unknown_session", { sessionId });
