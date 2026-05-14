@@ -78,51 +78,55 @@ export function StartForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto max-w-lg" noValidate>
-      <div className="mb-3 flex flex-col gap-2 sm:flex-row">
-        <div className="min-w-0 flex-1">
-          <label htmlFor="start-form-category" className="mb-1.5 block text-left text-xs text-[#a1a1aa]">
-            Niche or category
-          </label>
-          <input
-            id="start-form-category"
-            type="text"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            placeholder='e.g. "Base ecosystem analytics"'
-            disabled={loading}
-            autoComplete="off"
-            className="min-h-11 w-full rounded border border-[#27272a] bg-[#111111] px-4 py-2.5 text-sm text-[#ededed] placeholder-[#52525b] outline-none focus-visible:border-[#22c55e] focus-visible:ring-2 focus-visible:ring-[#22c55e]/30 disabled:opacity-50"
-          />
+    <form onSubmit={handleSubmit} className="mx-auto max-w-xl" noValidate>
+      <div className="overflow-hidden rounded-xl border border-[#27272a] bg-[#111111]">
+        <div className="flex flex-col sm:flex-row sm:divide-x sm:divide-[#27272a]">
+          <div className="min-w-0 flex-1 px-4 py-3">
+            <label htmlFor="start-form-category" className="mb-1 block text-left text-xs text-[#52525b]">
+              Niche or category
+            </label>
+            <input
+              id="start-form-category"
+              type="text"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder='e.g. "Base ecosystem analytics"'
+              disabled={loading}
+              autoComplete="off"
+              className="w-full bg-transparent text-sm text-[#ededed] placeholder-[#3f3f46] outline-none disabled:opacity-50"
+            />
+          </div>
+          <div className="shrink-0 border-t border-[#27272a] px-4 py-3 sm:w-36 sm:border-t-0">
+            <label htmlFor="start-form-deposit" className="mb-1 block text-left text-xs text-[#52525b]">
+              Deposit (USDC)
+            </label>
+            <input
+              id="start-form-deposit"
+              type="text"
+              inputMode="decimal"
+              value={deposit}
+              onChange={(e) => setDeposit(e.target.value)}
+              placeholder="20.00"
+              disabled={loading}
+              autoComplete="off"
+              className="w-full bg-transparent text-sm text-[#ededed] outline-none sm:text-right disabled:opacity-50"
+            />
+          </div>
         </div>
-        <div className="shrink-0 sm:w-28">
-          <label htmlFor="start-form-deposit" className="mb-1.5 block text-left text-xs text-[#a1a1aa]">
-            Deposit (USDC)
-          </label>
-          <input
-            id="start-form-deposit"
-            type="text"
-            inputMode="decimal"
-            value={deposit}
-            onChange={(e) => setDeposit(e.target.value)}
-            placeholder="20.00"
-            disabled={loading}
-            autoComplete="off"
-            className="min-h-11 w-full rounded border border-[#27272a] bg-[#111111] px-3 py-2.5 text-center text-sm text-[#ededed] outline-none focus-visible:border-[#22c55e] focus-visible:ring-2 focus-visible:ring-[#22c55e]/30 disabled:opacity-50"
-          />
+        <div className="border-t border-[#27272a]">
+          <button
+            type="submit"
+            disabled={loading || !category.trim()}
+            aria-busy={loading}
+            className="min-h-12 w-full bg-[#22c55e] px-6 py-3 text-sm font-semibold text-[#052e16] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22c55e] focus-visible:ring-inset disabled:opacity-40"
+          >
+            {loading ? "AI is working..." : "Give the AI $20"}
+          </button>
         </div>
       </div>
-      <button
-        type="submit"
-        disabled={loading || !category.trim()}
-        aria-busy={loading}
-        className="min-h-11 w-full rounded border border-[#22c55e] bg-[#22c55e] px-6 py-2.5 text-sm font-semibold text-[#052e16] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22c55e] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] disabled:opacity-40"
-      >
-        {loading ? "AI is working..." : "Give the AI $20"}
-      </button>
       <div className="mt-3 min-h-5" aria-live="polite" aria-atomic="true">
         {loading && (
-          <p className="text-xs text-[#71717a]">
+          <p className="text-xs text-[#52525b]">
             Scoring niches, researching, and writing your product. Takes ~30 seconds.
           </p>
         )}
