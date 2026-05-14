@@ -5,7 +5,12 @@
  * With DEMO_MODE=true (set in env), the agent uses cached API responses
  * and skips sleep delays for a fast in-browser demo.
  */
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
+import { resolve } from "node:path";
+
+const root = process.cwd();
+loadEnv({ path: resolve(root, ".env") });
+loadEnv({ path: resolve(root, ".env.local"), override: true });
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 const CRON_SECRET = process.env.CRON_SECRET;
