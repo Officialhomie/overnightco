@@ -2,10 +2,15 @@
  * Seed the owner row and default newsletterSettings.
  * Run: npx tsx scripts/seed-owner.ts
  */
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
+import { resolve } from "node:path";
 import bcrypt from "bcryptjs";
 import { db } from "../lib/db";
 import { owner, newsletterSettings } from "../lib/db/schema";
+
+const root = process.cwd();
+loadEnv({ path: resolve(root, ".env") });
+loadEnv({ path: resolve(root, ".env.local"), override: true });
 
 const email = process.env.OWNER_EMAIL ?? "owner@overnightco.ai";
 const password = process.env.OWNER_PASSWORD ?? "changeme123";
