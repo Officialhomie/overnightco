@@ -8,7 +8,7 @@ export default async function SettingsPage() {
   const [settings] = await db.select().from(newsletterSettings).limit(1);
 
   return (
-    <div className="px-8 py-8">
+    <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <div className="mb-8">
         <h1 className="text-xl font-bold">Settings</h1>
         <p className="mt-1 text-sm text-[#71717a]">
