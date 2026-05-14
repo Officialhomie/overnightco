@@ -1,5 +1,6 @@
 import "server-only";
 
+import { getAddress } from "viem";
 import { LocusClient } from "./client";
 import { logger } from "@/lib/logger";
 
@@ -25,11 +26,14 @@ export async function sendUsdcToWallet(
     return { transactionId: `mock_tx_${Date.now()}`, status: "CONFIRMED" };
   }
 
+  // EIP-55 checksum required — Locus /pay/send rejects lowercase addresses
+  const checksummedAddress = getAddress(toAddress);
+
   const client = new LocusClient();
   const res = await client.request<Record<string, unknown>>("/pay/send", {
     method: "POST",
     body: JSON.stringify({
-      to_address: toAddress,
+      to_address: checksummedAddress,
       amount: amountUsdc,
       memo,
     }),
