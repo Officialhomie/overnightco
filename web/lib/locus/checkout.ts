@@ -33,10 +33,19 @@ function pickCheckoutUrl(data: Record<string, unknown>): string | undefined {
   );
 }
 
+function pickWebhookSecret(data: Record<string, unknown>): string | undefined {
+  return (
+    (typeof data.webhookSecret === "string" && data.webhookSecret) ||
+    (typeof data.webhook_secret === "string" && data.webhook_secret) ||
+    (typeof data.whsec === "string" && data.whsec) ||
+    undefined
+  );
+}
+
 export async function createCheckoutSession(params: {
   amountUsdc: string;
   productName: string;
-}): Promise<{ sessionId: string; checkoutUrl: string }> {
+}): Promise<{ sessionId: string; checkoutUrl: string; webhookSecret?: string }> {
   if (process.env.MOCK_LOCUS === "1") {
     const id = `mock_sess_${Date.now()}`;
     return {
@@ -65,6 +74,7 @@ export async function createCheckoutSession(params: {
   const data = res.data;
   const sessionId = pickSessionId(data);
   let checkoutUrl = pickCheckoutUrl(data);
+  const webhookSecret = pickWebhookSecret(data);
 
   if (!checkoutUrl) {
     const detail = await client.request<Record<string, unknown>>(
@@ -79,7 +89,7 @@ export async function createCheckoutSession(params: {
     throw new Error("Locus create session: missing checkout URL");
   }
 
-  return { sessionId, checkoutUrl };
+  return { sessionId, checkoutUrl, webhookSecret };
 }
 
 export async function getSessionDetail(sessionId: string): Promise<{
