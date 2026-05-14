@@ -54,7 +54,7 @@ export class LocusClient {
       try {
         const res = await fetch(this.url(path), {
           ...requestInit,
-          signal: AbortSignal.timeout(10_000),
+          signal: AbortSignal.timeout(45_000),
         });
         if (RETRYABLE_HTTP_STATUS.has(res.status) && attempt < MAX_ATTEMPTS) {
           logger.warn("locus.retryable_status", {
