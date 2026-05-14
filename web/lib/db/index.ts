@@ -4,9 +4,11 @@ import ws from "ws";
 
 import * as schema from "./schema";
 
-// WebSocket polyfill required for Node.js (local dev, scripts, migrations).
-// Vercel Edge / serverless environments have native WebSocket support.
-neonConfig.webSocketConstructor = ws;
+// WebSocket polyfill for local dev and scripts only.
+// Vercel serverless has native WebSocket — setting ws there causes "b.mask is not a function".
+if (typeof WebSocket === "undefined") {
+  neonConfig.webSocketConstructor = ws;
+}
 
 type DrizzleDb = ReturnType<typeof drizzle<typeof schema>>;
 

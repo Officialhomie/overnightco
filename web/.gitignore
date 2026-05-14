@@ -7,3 +7,7 @@ node_modules/
 .env.local
 .env.*.local
 *.log
+
+# Neon CLI project context
+.neon
+pnpm-lock.yaml

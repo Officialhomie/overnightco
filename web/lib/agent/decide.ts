@@ -2,7 +2,7 @@ import "server-only";
 
 import { callClaude } from "@/lib/locus/wrapped-apis";
 import { db } from "@/lib/db";
-import { nicheScores, aiDecisions, businessCycles } from "@/lib/db/schema";
+import { nicheScores, aiDecisions, businessCycles, transactions } from "@/lib/db/schema";
 import { logger } from "@/lib/logger";
 import { eq } from "drizzle-orm";
 
@@ -36,6 +36,58 @@ export async function scoreNiches(
   category: string,
   cycleId: string,
 ): Promise<NicheDecision> {
+  // DEMO_MODE: skip Claude, return fixture instantly
+  if (process.env.DEMO_MODE === "true") {
+    const demoCost = "0.000899";
+    const niche = `${category} — Designer Brand Intelligence`;
+    await db.insert(transactions).values({
+      type: "COST_CLAUDE",
+      amountUsdc: demoCost,
+      cycleId,
+      description: "Claude: niche scoring (demo)",
+    });
+    await db.insert(nicheScores).values([
+      {
+        cycleId,
+        nicheName: niche,
+        nicheDescription: `AI intelligence brief covering ${category} with designer brand focus`,
+        estimatedRevenueUsdc: "18.50",
+        probabilityScore: "0.350",
+        estimatedCostUsdc: "0.50",
+        expectedValueUsdc: "6.00",
+        decision: "SELECTED",
+        decisionReason: "Highest EV — affluent audience, repeat buyers, strong agent demand",
+      },
+    ]);
+    await db.insert(aiDecisions).values({
+      cycleId,
+      phase: "DECIDE",
+      prompt: `Demo decide for: ${category}`,
+      reasoning: JSON.stringify([{ name: niche, ev: 6.0, decision: "SELECTED" }]),
+      decision: `Demo: selected "${niche}" with EV $6.00`,
+      costUsdc: demoCost,
+    });
+    await db.update(businessCycles).set({ ownerInput: niche }).where(eq(businessCycles.id, cycleId));
+    return {
+      selectedNiche: niche,
+      selectedDescription: `AI intelligence brief covering ${category} with designer brand focus`,
+      reason: "Demo: highest expected value niche selected",
+      candidates: [
+        {
+          name: niche,
+          description: `AI intelligence brief covering ${category} with designer brand focus`,
+          estimatedRevenueUsdc: 18.5,
+          probabilityScore: 0.35,
+          estimatedCostUsdc: 0.5,
+          expectedValueUsdc: 6.0,
+          decision: "SELECTED",
+          decisionReason: "Highest EV — demo fixture",
+        },
+      ],
+      costUsdc: demoCost,
+    };
+  }
+
   logger.info("agent.decide.start", { category, cycleId });
 
   const prompt = `You are deciding which niche to cover for an AI-published intelligence product.
