@@ -36,7 +36,7 @@ export function PnlCards({ today, allTime }: PnlCardsProps) {
       <h2 className="text-xs font-semibold uppercase tracking-widest text-[#71717a]">
         Today
       </h2>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card
           label="Revenue"
           value={`$${today.revenueUsdc}`}
@@ -60,7 +60,7 @@ export function PnlCards({ today, allTime }: PnlCardsProps) {
       <h2 className="mt-6 text-xs font-semibold uppercase tracking-widest text-[#71717a]">
         All time
       </h2>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card
           label="Revenue"
           value={`$${allTime.revenueUsdc}`}
