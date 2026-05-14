@@ -78,17 +78,18 @@ export async function POST(
       : `${product.title} — OvernightCo`;
 
   try {
-    const { sessionId, checkoutUrl } = await createCheckoutSession({
+    const { sessionId, checkoutUrl, webhookSecret } = await createCheckoutSession({
       amountUsdc,
       productName: label,
     });
 
-    // Create pending access grant
+    // Create pending access grant, storing per-session webhook secret for signature verification
     await db.insert(accessGrants).values({
       productId,
       locusSessionId: sessionId,
       buyerType,
       amountUsdc,
+      webhookSecret: webhookSecret ?? null,
     });
 
     logger.info("product.subscribe.created", {
