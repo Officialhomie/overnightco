@@ -4,43 +4,60 @@ interface DecisionLogProps {
   decisions: AiDecision[];
 }
 
-const PHASE_COLORS: Record<string, string> = {
-  DECIDE: "text-[#22c55e] border-[#22c55e]/30",
-  BUILD: "text-[#3b82f6] border-[#3b82f6]/30",
-  REPORT: "text-[#a855f7] border-[#a855f7]/30",
-};
+function phaseBadgeClass(phase: string): string {
+  switch (phase) {
+    case "DECIDE":
+      return "bg-blue-900/30 text-blue-400";
+    case "BUILD":
+      return "bg-green-900/30 text-green-400";
+    case "REPORT":
+      return "bg-amber-900/30 text-amber-400";
+    default:
+      return "bg-[#2f372e] text-[#bccbb9]";
+  }
+}
 
 export function DecisionLog({ decisions }: DecisionLogProps) {
   return (
     <div>
-      <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-[#71717a]">
-        AI decision log
-      </h2>
-      <div className="space-y-3">
+      {/* Section header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-[#adc6ff] text-base">psychology</span>
+          <span className="font-mono text-[10px] text-[#bccbb9] uppercase tracking-widest">
+            AI Decision Log
+          </span>
+        </div>
+        <span className="font-mono text-[10px] text-[#869585]">Real-time Feed</span>
+      </div>
+
+      <div className="space-y-4 max-h-[600px] overflow-y-auto">
         {decisions.length === 0 ? (
-          <p className="text-sm text-[#52525b]">No decisions yet.</p>
+          <p className="font-mono text-sm text-[#869585]">No decisions yet.</p>
         ) : (
           decisions.map((d) => (
             <div
               key={d.id}
-              className="rounded-lg border border-[#27272a] bg-[#111111] p-4"
+              className={`bg-[#1a221a] border border-[#3d4a3d] p-4 ${
+                d.phase === "BUILD" ? "border-l-4 border-l-[#4be277]" : ""
+              }`}
             >
-              <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
                 <span
-                  className={`shrink-0 rounded border px-2 py-0.5 text-xs font-semibold ${PHASE_COLORS[d.phase] ?? "text-[#a1a1aa] border-[#27272a]"}`}
+                  className={`shrink-0 px-2 py-0.5 rounded font-mono text-[10px] uppercase ${phaseBadgeClass(d.phase)}`}
                 >
                   {d.phase}
                 </span>
-                <span className="shrink-0 text-xs text-[#52525b]">
+                <span className="shrink-0 font-mono text-[10px] text-[#869585]">
                   {new Date(d.createdAt).toLocaleTimeString()}
                 </span>
                 {d.costUsdc && (
-                  <span className="text-xs text-[#ef4444] sm:ml-auto">
+                  <span className="font-mono text-[10px] text-[#ffb4ab] sm:ml-auto">
                     ${d.costUsdc}
                   </span>
                 )}
               </div>
-              <p className="text-sm leading-relaxed text-[#a1a1aa]">{d.decision}</p>
+              <p className="font-mono text-[12px] text-[#dce5d9] leading-relaxed">{d.decision}</p>
             </div>
           ))
         )}
