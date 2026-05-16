@@ -5,79 +5,92 @@ interface PnlCardsProps {
   allTime: PnlResult;
 }
 
-function Card({
-  label,
-  value,
-  sub,
-  color,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  color?: string;
-}) {
-  return (
-    <div className="rounded-lg border border-[#27272a] bg-[#111111] p-5">
-      <div className="mb-1 text-xs font-semibold uppercase tracking-widest text-[#71717a]">
-        {label}
-      </div>
-      <div className={`text-2xl font-bold ${color ?? "text-[#ededed]"}`}>{value}</div>
-      {sub && <div className="mt-1 text-xs text-[#71717a]">{sub}</div>}
-    </div>
-  );
-}
-
 export function PnlCards({ today, allTime }: PnlCardsProps) {
   const todayProfit = parseFloat(today.profitUsdc);
   const allTimeProfit = parseFloat(allTime.profitUsdc);
 
+  const todayRevenue = parseFloat(today.revenueUsdc);
+  const todayCosts = parseFloat(today.costsUsdc);
+  const todayMargin =
+    todayRevenue > 0 ? Math.round((todayProfit / todayRevenue) * 100) : 0;
+
   return (
-    <div className="space-y-4">
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-[#71717a]">
-        Today
-      </h2>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card
-          label="Revenue"
-          value={`$${today.revenueUsdc}`}
-          sub={`human $${today.revenueByType.human} · agent $${today.revenueByType.agent}`}
-          color="text-[#22c55e]"
-        />
-        <Card
-          label="Costs"
-          value={`$${today.costsUsdc}`}
-          sub={`exa $${today.costsByType.exa} · claude $${today.costsByType.claude}`}
-          color="text-[#ef4444]"
-        />
-        <Card
-          label="Profit"
-          value={`$${today.profitUsdc}`}
-          sub={`${today.transactionCount} transactions`}
-          color={todayProfit >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}
-        />
+    <div>
+      {/* Section header */}
+      <div className="flex items-center gap-2 mb-4">
+        <span className="material-symbols-outlined text-[#bccbb9] text-base">query_stats</span>
+        <span className="font-mono text-[10px] text-[#bccbb9] uppercase tracking-widest">
+          Performance Snapshot
+        </span>
       </div>
 
-      <h2 className="mt-6 text-xs font-semibold uppercase tracking-widest text-[#71717a]">
-        All time
-      </h2>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card
-          label="Revenue"
-          value={`$${allTime.revenueUsdc}`}
-          sub={`human $${allTime.revenueByType.human} · agent $${allTime.revenueByType.agent}`}
-          color="text-[#22c55e]"
-        />
-        <Card
-          label="Costs"
-          value={`$${allTime.costsUsdc}`}
-          sub={`exa $${allTime.costsByType.exa} · claude $${allTime.costsByType.claude}`}
-          color="text-[#ef4444]"
-        />
-        <Card
-          label="Profit"
-          value={`$${allTime.profitUsdc}`}
-          color={allTimeProfit >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}
-        />
+      {/* Today row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+        <div className="bg-[#1a221a] border border-[#3d4a3d] p-4">
+          <div className="font-mono text-[10px] text-[#bccbb9] uppercase mb-2">Today: Revenue</div>
+          <div className="text-[24px] font-bold text-[#4be277]">${today.revenueUsdc}</div>
+          <div className="flex items-center gap-1 mt-1">
+            <span className="material-symbols-outlined text-[#4be277] text-sm">trending_up</span>
+            <span className="font-mono text-[10px] text-[#4be277]">
+              human ${today.revenueByType.human} · agent ${today.revenueByType.agent}
+            </span>
+          </div>
+        </div>
+
+        <div className="bg-[#1a221a] border border-[#3d4a3d] p-4">
+          <div className="font-mono text-[10px] text-[#bccbb9] uppercase mb-2">Today: Costs</div>
+          <div className="text-[24px] font-bold text-[#ffb4ab]">${today.costsUsdc}</div>
+          <div className="font-mono text-[10px] text-[#bccbb9] mt-1">
+            exa ${today.costsByType.exa} · claude ${today.costsByType.claude}
+          </div>
+        </div>
+
+        <div className="bg-[#1a221a] border border-[#3d4a3d] border-l-4 border-l-[#4be277] p-4">
+          <div className="font-mono text-[10px] text-[#bccbb9] uppercase mb-2">Today: Net Profit</div>
+          <div
+            className={`text-[24px] font-bold ${
+              todayProfit >= 0 ? "text-[#4ae176]" : "text-[#ffb4ab]"
+            }`}
+          >
+            ${today.profitUsdc}
+          </div>
+          <div className="font-mono text-[10px] text-[#bccbb9] mt-1">
+            Margin: {todayMargin}%
+          </div>
+        </div>
+      </div>
+
+      {/* All time row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 opacity-80">
+        <div className="bg-[#161d16] border border-[#3d4a3d] p-4">
+          <div className="font-mono text-[10px] text-[#bccbb9] uppercase mb-2">All Time: Revenue</div>
+          <div className="text-[20px] font-bold text-[#dce5d9]">${allTime.revenueUsdc}</div>
+          <div className="font-mono text-[10px] text-[#bccbb9] mt-1">
+            human ${allTime.revenueByType.human} · agent ${allTime.revenueByType.agent}
+          </div>
+        </div>
+
+        <div className="bg-[#161d16] border border-[#3d4a3d] p-4">
+          <div className="font-mono text-[10px] text-[#bccbb9] uppercase mb-2">All Time: Costs</div>
+          <div className="text-[20px] font-bold text-[#bccbb9]">${allTime.costsUsdc}</div>
+          <div className="font-mono text-[10px] text-[#bccbb9] mt-1">
+            exa ${allTime.costsByType.exa} · claude ${allTime.costsByType.claude}
+          </div>
+        </div>
+
+        <div className="bg-[#161d16] border border-[#3d4a3d] p-4">
+          <div className="font-mono text-[10px] text-[#bccbb9] uppercase mb-2">All Time: Net Profit</div>
+          <div
+            className={`text-[20px] font-bold ${
+              allTimeProfit >= 0 ? "text-[#4be277]" : "text-[#ffb4ab]"
+            }`}
+          >
+            ${allTime.profitUsdc}
+          </div>
+          <div className="font-mono text-[10px] text-[#bccbb9] mt-1">
+            {allTime.transactionCount} transactions
+          </div>
+        </div>
       </div>
     </div>
   );
