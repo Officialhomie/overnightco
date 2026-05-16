@@ -23,68 +23,130 @@ export default async function ProductPage({
 
   if (!product) notFound();
 
+  const publishedLabel = product.publishedAt
+    ? new Date(product.publishedAt)
+        .toISOString()
+        .slice(0, 10)
+        .replace(/-/g, ".")
+        .concat("_04:00_UTC")
+    : null;
+
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-[#ededed]">
-      {/* Nav */}
-      <nav className="border-b border-[#27272a] px-4 py-4 sm:px-6">
-        <Link href="/" className="text-sm text-[#71717a] hover:text-[#a1a1aa] focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22c55e] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]">
-          OvernightCo
+    <main className="min-h-screen bg-[#0e150e] text-[#dce5d9]">
+      {/* Top nav */}
+      <header className="fixed top-0 left-0 w-full z-50 h-14 border-b border-[#3d4a3d] bg-[#0e150e]/80 backdrop-blur-md flex items-center justify-between px-6">
+        <Link
+          href="/"
+          className="flex items-center gap-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4be277]"
+        >
+          <span className="material-symbols-outlined text-[#4be277] group-hover:-translate-x-1 transition-transform">
+            arrow_back
+          </span>
+          <span className="font-mono font-bold text-[#4be277] tracking-tighter uppercase text-base">
+            OvernightCo
+          </span>
         </Link>
-      </nav>
-
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-12">
-        {/* Meta */}
-        <div className="mb-4 flex flex-wrap gap-3 text-xs text-[#71717a]">
-          <span className="rounded border border-[#27272a] px-2 py-0.5">{product.niche}</span>
-          {product.publishedAt && (
-            <span>{new Date(product.publishedAt).toLocaleDateString()}</span>
-          )}
+        <div className="flex items-center gap-2 px-3 py-1 bg-[#161d16] border border-[#3d4a3d] rounded-full">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#4be277] pulse-dot" />
+          <span className="font-mono text-[10px] text-[#bccbb9] uppercase tracking-widest">
+            Network Live
+          </span>
         </div>
+      </header>
 
-        <h1 className="mb-4 text-2xl font-bold leading-tight sm:text-3xl">{product.title}</h1>
-        <p className="mb-8 text-lg text-[#a1a1aa]">{product.teaser}</p>
+      <div className="max-w-[800px] mx-auto px-6 pt-32 pb-40">
+        {/* Header section */}
+        <section className="mb-12">
+          <div className="flex items-center gap-3 mb-6">
+            <span className="px-2 py-0.5 bg-[#242c24] border border-[#3d4a3d] text-[#4be277] font-mono text-[10px] rounded uppercase tracking-wider">
+              Market Analysis
+            </span>
+            {publishedLabel && (
+              <span className="text-[#bccbb9] font-mono text-[10px] border-l border-[#3d4a3d] pl-3">
+                PUBLISHED: {publishedLabel}
+              </span>
+            )}
+          </div>
+          <h1 className="text-[24px] leading-[32px] tracking-[-0.02em] font-bold border-l-4 border-[#4be277] pl-6 mb-6">
+            {product.title}
+          </h1>
+          <p className="text-[16px] text-[#bccbb9] leading-relaxed">
+            {product.teaser}
+          </p>
+        </section>
 
-        {/* Paywall */}
+        {/* Content */}
         {product.status === "LIVE" && !product.humanHtml ? (
           <PaywallButton productId={product.id} priceUsdc={product.humanPriceUsdc} />
         ) : product.status === "LIVE" && product.humanHtml ? (
-          <>
-            {/* For demo: show content without paywall (can gate this later) */}
-            <article
-              className="prose prose-invert prose-sm sm:prose-base mx-auto max-w-prose prose-headings:font-bold prose-headings:tracking-tight prose-p:text-[#d4d4d8] prose-a:text-[#22c55e] prose-a:no-underline hover:prose-a:underline prose-strong:text-[#ededed] prose-code:rounded prose-code:bg-[#18181b] prose-code:px-1 prose-code:py-0.5 prose-code:text-[#a1a1aa] prose-pre:border prose-pre:border-[#27272a] prose-pre:bg-[#111111]"
-              dangerouslySetInnerHTML={{ __html: product.humanHtml }}
-            />
-          </>
+          <article
+            className="prose-dark font-mono text-sm mb-16"
+            dangerouslySetInnerHTML={{ __html: product.humanHtml }}
+          />
         ) : (
-          <div className="rounded border border-[#27272a] bg-[#111111] p-8 text-center text-sm text-[#71717a]">
+          <div className="border border-[#3d4a3d] bg-[#161d16] p-8 text-center text-sm text-[#869585]">
             {product.status === "BUILDING" ? "Building..." : "This product is not yet available."}
           </div>
         )}
 
-        {/* Agent tier CTA */}
-        <div className="mt-12 rounded-lg border border-[#1d4ed8]/30 bg-[#1e3a8a]/10 p-4">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#3b82f6]">
-            Agent tier
+        {/* Agent tier panel */}
+        <section className="p-6 bg-[#091009] border border-[#0566d9]/30 rounded-lg mt-12">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#adc6ff]">smart_toy</span>
+                <span className="text-[#adc6ff] font-mono text-[10px] uppercase tracking-[0.2em] font-bold">
+                  Agent tier
+                </span>
+              </div>
+              <div>
+                <p className="font-mono text-[13px] text-[#dce5d9]">
+                  RAW_LOGS: ${product.agentPriceUsdc} USDC
+                </p>
+                <p className="font-mono text-[12px] text-[#bccbb9]">
+                  Access raw JSON data structures for programmatic consumption.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href={`/product/${product.id}/skill.md`}
+                className="px-4 py-2 border border-[#3d4a3d] text-[#dce5d9] font-mono text-[13px] rounded flex items-center gap-2 hover:bg-[#242c24] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4be277]"
+              >
+                <span className="material-symbols-outlined text-base">description</span>
+                skill.md
+              </a>
+              <a
+                href={`/product/${product.id}/data.json`}
+                className="px-4 py-2 bg-[#0566d9] text-white font-mono text-[13px] rounded flex items-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#adc6ff]"
+              >
+                <span className="material-symbols-outlined text-base">lock</span>
+                data.json (402 gated)
+              </a>
+            </div>
           </div>
-          <p className="mb-3 text-sm text-[#a1a1aa]">
-            AI agent? Get structured JSON data for ${product.agentPriceUsdc} USDC.
-          </p>
-          <div className="flex flex-wrap gap-2 text-xs sm:gap-3">
-            <a
-              href={`/product/${product.id}/skill.md`}
-              className="rounded border border-[#27272a] px-3 py-1.5 text-[#a1a1aa] hover:text-[#ededed] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22c55e] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]"
-            >
-              skill.md
-            </a>
-            <a
-              href={`/product/${product.id}/data.json`}
-              className="rounded border border-[#27272a] px-3 py-1.5 text-[#a1a1aa] hover:text-[#ededed] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22c55e] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]"
-            >
-              data.json (402 gated)
-            </a>
-          </div>
-        </div>
+        </section>
       </div>
+
+      {/* Footer */}
+      <footer className="w-full border-t border-[#3d4a3d] bg-[#091009] py-4">
+        <div className="flex flex-col md:flex-row justify-between items-center px-6 max-w-[800px] mx-auto gap-4">
+          <span className="font-mono text-[10px] text-[#bccbb9] uppercase">
+            © 2024 OvernightCo. System autonomous.
+          </span>
+          <nav className="flex gap-6">
+            <a href="#" className="font-mono text-[10px] text-[#bccbb9] hover:text-[#4be277] transition-colors uppercase">
+              Architecture
+            </a>
+            <a href="#" className="font-mono text-[10px] text-[#bccbb9] hover:text-[#4be277] transition-colors uppercase">
+              Privacy Protocol
+            </a>
+            <a href="#" className="font-mono text-[10px] text-[#bccbb9] hover:text-[#4be277] transition-colors uppercase">
+              API Docs
+            </a>
+          </nav>
+        </div>
+      </footer>
     </main>
   );
 }
