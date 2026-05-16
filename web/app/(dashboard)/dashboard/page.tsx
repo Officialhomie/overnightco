@@ -24,7 +24,7 @@ export default async function DashboardPage() {
         .select()
         .from(transactions)
         .orderBy(desc(transactions.occurredAt))
-        .limit(30),
+        .limit(50),
       db
         .select({
           id: products.id,
@@ -37,7 +37,7 @@ export default async function DashboardPage() {
         .from(products)
         .where(eq(products.status, "LIVE"))
         .orderBy(desc(products.publishedAt))
-        .limit(5),
+        .limit(10),
       db
         .select()
         .from(businessCycles)
@@ -47,93 +47,122 @@ export default async function DashboardPage() {
     ]);
 
   return (
-    <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-      <div className="mb-8">
-        <h1 className="text-xl font-bold">P&L Dashboard</h1>
-        {latestCycle && (
-          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-[#71717a]">
-            <span>
-              Current niche: {latestCycle.ownerInput}
-            </span>
-            {latestCycle.cycleDecision && (
-              <span className="rounded border border-[#27272a] px-2 py-0.5 text-xs">
-                {latestCycle.cycleDecision}
+    <div>
+      {/* Sticky content header */}
+      <header className="flex justify-between items-center h-16 border-b border-[#3d4a3d] bg-[#0e150e] sticky top-0 z-40 px-6">
+        <div>
+          <h1 className="text-[20px] font-bold text-[#4be277] tracking-[-0.01em] leading-none">
+            P&L Dashboard
+          </h1>
+          {latestCycle && (
+            <p className="font-mono text-[10px] text-[#adc6ff] mt-0.5">
+              Active Niche: {latestCycle.ownerInput}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-4">
+          {latestCycle?.cycleDecision && (
+            <div className="hidden lg:flex items-center gap-2 bg-[#242c24] border border-[#3d4a3d] px-3 py-1 rounded-full">
+              <span className="w-2 h-2 bg-[#4be277] rounded-full pulse-dot" />
+              <span className="font-mono text-[10px] text-[#4be277]">
+                Cycle: {latestCycle.cycleDecision}
               </span>
-            )}
-          </p>
+            </div>
+          )}
+          <span className="material-symbols-outlined text-[#bccbb9] cursor-pointer hover:text-[#4be277] transition-colors">
+            notifications_active
+          </span>
+        </div>
+      </header>
+
+      <div className="px-6 py-6">
+        {/* Performance snapshot */}
+        <section className="mb-8">
+          <PnlCards today={today} allTime={allTime} />
+        </section>
+
+        {/* Decision log + Transaction feed */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <DecisionLog decisions={recentDecisions} />
+          <TransactionFeed transactions={recentTransactions} />
+        </div>
+
+        {/* Autonomous Portfolio */}
+        {liveProducts.length > 0 && (
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="material-symbols-outlined text-[#bccbb9] text-base">grid_view</span>
+              <span className="font-mono text-[10px] text-[#bccbb9] uppercase tracking-widest">
+                Autonomous Portfolio
+              </span>
+            </div>
+
+            <div className="bg-[#1a221a] border border-[#3d4a3d] overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-[#242c24] border-b border-[#3d4a3d]">
+                  <tr>
+                    <th className="font-mono text-[10px] text-[#bccbb9] uppercase px-4 py-2 text-left">
+                      Product Name
+                    </th>
+                    <th className="font-mono text-[10px] text-[#bccbb9] uppercase px-4 py-2 text-left">
+                      Status
+                    </th>
+                    <th className="font-mono text-[10px] text-[#bccbb9] uppercase px-4 py-2 text-right hidden sm:table-cell">
+                      Build Cost
+                    </th>
+                    <th className="font-mono text-[10px] text-[#bccbb9] uppercase px-4 py-2 text-right hidden md:table-cell">
+                      Published
+                    </th>
+                    <th className="font-mono text-[10px] text-[#bccbb9] uppercase px-4 py-2 text-right">
+                      Link
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#3d4a3d]">
+                  {liveProducts.map((p) => (
+                    <tr key={p.id} className="hover:bg-[#2f372e] transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="font-mono text-[12px] text-[#dce5d9] truncate max-w-[220px]">
+                          {p.title}
+                        </div>
+                        <div className="font-mono text-[10px] text-[#869585]">{p.niche}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#4be277] pulse-dot" />
+                          <span className="font-mono text-[10px] text-[#4be277] uppercase">
+                            {p.status}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right hidden sm:table-cell">
+                        <span className="font-mono text-[12px] text-[#bccbb9]">
+                          ${p.totalCostUsdc}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right hidden md:table-cell">
+                        <span className="font-mono text-[10px] text-[#869585]">
+                          {p.publishedAt
+                            ? new Date(p.publishedAt).toLocaleDateString()
+                            : "—"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Link
+                          href={`/product/${p.id}`}
+                          className="font-mono text-[10px] text-[#adc6ff] hover:text-[#4be277] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4be277]"
+                        >
+                          View →
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
         )}
       </div>
-
-      <PnlCards today={today} allTime={allTime} />
-
-      <div className="mt-10 grid gap-8 lg:grid-cols-2">
-        <DecisionLog decisions={recentDecisions} />
-        <TransactionFeed transactions={recentTransactions} />
-      </div>
-
-      {liveProducts.length > 0 && (
-        <div className="mt-10">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-[#71717a]">
-            Live products
-          </h2>
-
-          <div className="space-y-3 md:hidden">
-            {liveProducts.map((p) => (
-              <Link
-                key={p.id}
-                href={`/product/${p.id}`}
-                className="block rounded-lg border border-[#27272a] bg-[#111111] p-4 transition-colors hover:border-[#3f3f46] hover:bg-[#1a1a1a]"
-              >
-                <div className="mb-1 text-xs text-[#71717a]">{p.niche}</div>
-                <div className="mb-2 font-medium text-[#22c55e]">{p.title}</div>
-                <div className="flex flex-wrap justify-between gap-2 text-xs text-[#a1a1aa]">
-                  <span>Build ${p.totalCostUsdc}</span>
-                  <span className="text-[#71717a]">
-                    {p.publishedAt ? new Date(p.publishedAt).toLocaleDateString() : "—"}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-
-          <div className="hidden overflow-x-auto rounded-lg border border-[#27272a] md:block">
-            <table className="w-full min-w-[520px] text-sm">
-              <thead>
-                <tr className="border-b border-[#27272a] bg-[#111111]">
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#71717a]">
-                    Title
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#71717a]">
-                    Niche
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-[#71717a]">
-                    Build cost
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-[#71717a]">
-                    Published
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {liveProducts.map((p) => (
-                  <tr key={p.id} className="border-b border-[#27272a] last:border-0 hover:bg-[#111111]">
-                    <td className="px-4 py-3">
-                      <Link href={`/product/${p.id}`} className="text-[#22c55e] hover:underline">
-                        {p.title}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-[#a1a1aa]">{p.niche}</td>
-                    <td className="px-4 py-3 text-right text-[#a1a1aa]">${p.totalCostUsdc}</td>
-                    <td className="px-4 py-3 text-right text-[#71717a]">
-                      {p.publishedAt ? new Date(p.publishedAt).toLocaleDateString() : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
