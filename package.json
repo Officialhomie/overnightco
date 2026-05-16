@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "type": "module",
   "private": true,
+  "workspaces": ["web"],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "dev": "cd web && npm run dev",
-    "build": "cd web && npm run build",
+    "dev": "npm run dev -w overnightco-web",
+    "build": "npm run build -w overnightco-web",
     "demo": "cd web && npx tsx scripts/trigger-demo.ts"
   }
 }
