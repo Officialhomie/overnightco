@@ -10,4 +10,3 @@ node_modules/
 
 # Neon CLI project context
 .neon
-pnpm-lock.yaml
