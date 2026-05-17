@@ -10,6 +10,28 @@ Your $20 is the only input. The P&L is the only output.
 
 ---
 
+## Live Demo
+
+- **Agent backend + Locus Checkout:** https://overnightco.vercel.app
+- **LocusFounder storefront:** https://svc-mp9pjv3pc4qow92z.buildwithlocus.com
+- **Business plan (AI-generated):** https://api.locusfounder.com/api/onboarding/prospect/de5e79f9-4f53-4449-a78f-6bd72723b205/plan.pdf
+- **Devfolio submission:** https://devfolio.co/projects/overnightco-9b5b
+
+### Try it as an agent
+
+```bash
+# Discover the catalog
+curl https://overnightco.vercel.app/llms.txt
+curl https://overnightco.vercel.app/api/catalog
+
+# Trigger a demo cycle
+curl -X POST https://overnightco.vercel.app/api/agent/start \
+  -H "Content-Type: application/json" \
+  -d '{"category":"bootstrapped SaaS revenue intelligence","depositAmountUsdc":"20.00"}'
+```
+
+---
+
 ## How It Works
 
 **Phase 1 — Decide**: The agent scores candidate niches using `expected_value = revenue × probability − cost`. It picks one and explains why.
