@@ -6,19 +6,22 @@ const { auth } = NextAuth(authConfig);
 
 const ALLOWED_ORIGINS = [
   "https://svc-mp9pjv3pc4qow92z.buildwithlocus.com",
+  "https://svc-mp8epbflj79utnbw.buildwithlocus.com",
   "https://overnightco.vercel.app",
   "http://localhost:3000",
 ];
 
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
+  "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization, X-Requested-With",
   "Access-Control-Max-Age": "86400",
 };
 
 function getAllowedOrigin(req: NextRequest): string | null {
   const origin = req.headers.get("origin");
   if (!origin) return null;
+  // Allow any buildwithlocus.com subdomain or explicit entries
+  if (origin.endsWith(".buildwithlocus.com")) return origin;
   return ALLOWED_ORIGINS.includes(origin) ? origin : null;
 }
 
