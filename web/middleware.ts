@@ -1,15 +1,8 @@
 import NextAuth from "next-auth";
 import { authConfig } from "@/lib/auth/config";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 const { auth } = NextAuth(authConfig);
-
-const ALLOWED_ORIGINS = [
-  "https://svc-mp9pjv3pc4qow92z.buildwithlocus.com",
-  "https://svc-mp8epbflj79utnbw.buildwithlocus.com",
-  "https://overnightco.vercel.app",
-  "http://localhost:3000",
-];
 
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -17,52 +10,52 @@ const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Max-Age": "86400",
 };
 
-function getAllowedOrigin(req: NextRequest): string | null {
-  const origin = req.headers.get("origin");
-  if (!origin) return null;
-  // Allow any buildwithlocus.com subdomain or explicit entries
-  if (origin.endsWith(".buildwithlocus.com")) return origin;
-  return ALLOWED_ORIGINS.includes(origin) ? origin : null;
+function isAllowedOrigin(origin: string): boolean {
+  if (origin.endsWith(".buildwithlocus.com")) return true;
+  return [
+    "https://overnightco.vercel.app",
+    "http://localhost:3000",
+  ].includes(origin);
 }
 
-export default auth((req) => {
-  const { pathname } = req.nextUrl;
-  const allowedOrigin = getAllowedOrigin(req);
-
-  // Handle CORS preflight for all API routes
-  if (req.method === "OPTIONS" && pathname.startsWith("/api/")) {
-    const res = new NextResponse(null, { status: 204 });
-    if (allowedOrigin) {
-      res.headers.set("Access-Control-Allow-Origin", allowedOrigin);
-    }
-    for (const [k, v] of Object.entries(CORS_HEADERS)) {
-      res.headers.set(k, v);
-    }
-    return res;
+function withCors(res: NextResponse, origin: string | null): NextResponse {
+  if (origin && isAllowedOrigin(origin)) {
+    res.headers.set("Access-Control-Allow-Origin", origin);
   }
+  for (const [k, v] of Object.entries(CORS_HEADERS)) {
+    res.headers.set(k, v);
+  }
+  return res;
+}
 
-  // Protect dashboard routes
+// Auth middleware — only handles non-OPTIONS requests
+const authHandler = auth((req) => {
+  const { pathname } = req.nextUrl;
+  const origin = req.headers.get("origin");
+
   if (pathname.startsWith("/dashboard") && !req.auth) {
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return Response.redirect(loginUrl);
   }
 
-  // Protect internal API routes (route itself also checks CRON_SECRET)
-  if (pathname.startsWith("/api/internal")) {
-    return;
-  }
-
-  // Add CORS headers to all other API responses
-  if (pathname.startsWith("/api/") && allowedOrigin) {
-    const res = NextResponse.next();
-    res.headers.set("Access-Control-Allow-Origin", allowedOrigin);
-    for (const [k, v] of Object.entries(CORS_HEADERS)) {
-      res.headers.set(k, v);
-    }
-    return res;
+  // Add CORS headers on actual API responses
+  if (pathname.startsWith("/api/")) {
+    return withCors(NextResponse.next(), origin);
   }
 });
+
+// Top-level middleware: intercept OPTIONS before NextAuth sees it
+export default function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+  const origin = req.headers.get("origin");
+
+  if (req.method === "OPTIONS" && pathname.startsWith("/api/")) {
+    return withCors(new NextResponse(null, { status: 204 }), origin);
+  }
+
+  return (authHandler as (req: NextRequest) => Response | undefined)(req);
+}
 
 export const config = {
   matcher: [
