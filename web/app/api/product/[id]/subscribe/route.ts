@@ -13,6 +13,7 @@ export const dynamic = "force-dynamic";
 
 const SubscribeSchema = z.object({
   buyerType: z.enum(["HUMAN", "AGENT"]).default("HUMAN"),
+  successUrl: z.string().url().optional(),
 });
 
 /**
@@ -68,7 +69,7 @@ export async function POST(
     );
   }
 
-  const { buyerType } = parsed.data;
+  const { buyerType, successUrl } = parsed.data;
   const amountUsdc =
     buyerType === "AGENT" ? product.agentPriceUsdc : product.humanPriceUsdc;
 
@@ -81,6 +82,7 @@ export async function POST(
     const { sessionId, checkoutUrl, webhookSecret } = await createCheckoutSession({
       amountUsdc,
       productName: label,
+      successUrl,
     });
 
     // Create pending access grant, storing per-session webhook secret for signature verification

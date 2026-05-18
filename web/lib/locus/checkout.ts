@@ -45,6 +45,7 @@ function pickWebhookSecret(data: Record<string, unknown>): string | undefined {
 export async function createCheckoutSession(params: {
   amountUsdc: string;
   productName: string;
+  successUrl?: string;
 }): Promise<{ sessionId: string; checkoutUrl: string; webhookSecret?: string }> {
   if (process.env.MOCK_LOCUS === "1") {
     const id = `mock_sess_${Date.now()}`;
@@ -64,6 +65,7 @@ export async function createCheckoutSession(params: {
     currency: "USDC",
     description: params.productName,
     ...(isPublicUrl ? { webhookUrl: `${rawAuthUrl}/api/webhooks/locus` } : {}),
+    ...(params.successUrl ? { success_url: params.successUrl } : {}),
   };
 
   const res = await client.request<Record<string, unknown>>("/checkout/sessions", {
