@@ -6,7 +6,7 @@ import { and, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { accessGrants, transactions } from "@/lib/db/schema";
-import { getSessionDetail } from "@/lib/locus/checkout";
+import { LocusClient } from "@/lib/locus/client";
 import { generateAccessToken } from "@/lib/access/tokens";
 import { logger } from "@/lib/logger";
 
@@ -16,14 +16,50 @@ const ConfirmSchema = z.object({
   sessionId: z.string().min(1),
 });
 
+type LocusSessionStatus = "CONFIRMED" | "PENDING" | "EXPIRED" | "UNKNOWN";
+
+async function checkLocusSessionStatus(
+  sessionId: string,
+): Promise<LocusSessionStatus> {
+  try {
+    const client = new LocusClient({ apiKey: process.env.LOCUS_API_KEY! });
+    const res = await client.request<Record<string, unknown>>(
+      `/checkout/sessions/${sessionId}`,
+      { method: "GET" },
+    );
+    const data =
+      (res as { success: boolean; data?: Record<string, unknown> }).data ?? {};
+    const raw =
+      (typeof data.status === "string" && data.status) ||
+      (typeof data.paymentStatus === "string" && data.paymentStatus) ||
+      "";
+    const s = raw.toUpperCase();
+    if (s === "CONFIRMED" || s === "PAID" || s === "COMPLETED" || s === "SUCCEEDED") {
+      return "CONFIRMED";
+    }
+    if (s === "EXPIRED" || s === "CANCELLED" || s === "CANCELED") {
+      return "EXPIRED";
+    }
+    return "PENDING";
+  } catch {
+    return "UNKNOWN";
+  }
+}
+
 /**
  * POST /api/product/[id]/subscribe/confirm
  *
- * Polls Locus to verify payment, then issues an HMAC access token.
- * Called by buyers after completing Locus checkout.
+ * Verifies payment and issues an HMAC access token.
+ * Does NOT rely on the webhook — polls Locus directly every time.
  *
- * This is the polling path — webhooks are the fast path.
- * If webhook already confirmed the grant, we return the existing token.
+ * Fast path: webhook already confirmed → return cached token.
+ * Slow path: poll Locus, generate token on the spot.
+ *
+ * Never returns 402. Status codes:
+ *   200 — confirmed, token in response
+ *   202 — payment pending, try again
+ *   404 — session unknown
+ *   410 — session expired
  */
 export async function POST(
   req: Request,
@@ -48,7 +84,7 @@ export async function POST(
 
   const { sessionId } = parsed.data;
 
-  // Look up the pending grant
+  // Look up the grant
   const [grant] = await db
     .select()
     .from(accessGrants)
@@ -67,74 +103,60 @@ export async function POST(
     );
   }
 
-  // If webhook already confirmed this grant, return existing token
+  // Fast path: webhook already confirmed this grant
   if (grant.confirmedAt && grant.accessToken) {
-    logger.info("product.confirm.already_confirmed", {
-      grantId: grant.id,
-      sessionId,
-    });
+    logger.info("product.confirm.already_confirmed", { grantId: grant.id, sessionId });
     return NextResponse.json({
       success: true,
       data: { accessToken: grant.accessToken, expiresAt: grant.tokenExpiresAt?.toISOString() },
     });
   }
 
-  // Poll Locus to check payment status
-  let sessionDetail: Awaited<ReturnType<typeof getSessionDetail>>;
-  try {
-    sessionDetail = await getSessionDetail(sessionId);
-  } catch (err) {
-    logger.error("product.confirm.locus_poll_failed", {
-      sessionId,
-      error: String(err),
-    });
+  // Slow path: poll Locus directly
+  const locusStatus = await checkLocusSessionStatus(sessionId);
+
+  if (locusStatus === "EXPIRED") {
+    logger.info("product.confirm.expired", { sessionId });
     return NextResponse.json(
-      { error: "Failed to verify payment with Locus" },
-      { status: 502 },
+      { error: "Checkout session has expired. Please subscribe again." },
+      { status: 410 },
     );
   }
 
-  const status = sessionDetail.status.toUpperCase();
-  if (status !== "CONFIRMED" && status !== "PAID" && status !== "COMPLETED") {
+  if (locusStatus === "PENDING" || locusStatus === "UNKNOWN") {
     return NextResponse.json(
       {
         success: false,
-        status: sessionDetail.status,
+        status: locusStatus,
         hint: "Payment not yet confirmed. Wait a moment and try again.",
       },
       { status: 202 },
     );
   }
 
-  // Generate access token
+  // CONFIRMED — generate token and persist
   const ttlSeconds = grant.buyerType === "HUMAN" ? 86400 : 604800;
   const accessToken = generateAccessToken(
-    {
-      productId,
-      buyerType: grant.buyerType,
-      grantId: grant.id,
-    },
+    { productId, buyerType: grant.buyerType, grantId: grant.id },
     ttlSeconds,
   );
   const tokenExpiresAt = new Date(Date.now() + ttlSeconds * 1000);
   const now = new Date();
 
-  // Update grant as confirmed
   await db
     .update(accessGrants)
     .set({ confirmedAt: now, accessToken, tokenExpiresAt })
     .where(eq(accessGrants.id, grant.id));
 
   // Insert revenue transaction if not already added by webhook
-  const existing = await db
+  const [existing] = await db
     .select({ id: transactions.id })
     .from(transactions)
     .where(eq(transactions.locusSessionId, sessionId))
     .limit(1);
 
-  if (existing.length === 0) {
-    const txType =
-      grant.buyerType === "HUMAN" ? "REVENUE_HUMAN" : "REVENUE_AGENT";
+  if (!existing) {
+    const txType = grant.buyerType === "HUMAN" ? "REVENUE_HUMAN" : "REVENUE_AGENT";
     await db.insert(transactions).values({
       type: txType,
       amountUsdc: grant.amountUsdc,
