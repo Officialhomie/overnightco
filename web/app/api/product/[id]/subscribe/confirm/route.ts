@@ -2,7 +2,7 @@ import "server-only";
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { accessGrants, transactions } from "@/lib/db/schema";
@@ -75,8 +75,7 @@ export async function POST(
     });
     return NextResponse.json({
       success: true,
-      accessToken: grant.accessToken,
-      expiresAt: grant.tokenExpiresAt?.toISOString(),
+      data: { accessToken: grant.accessToken, expiresAt: grant.tokenExpiresAt?.toISOString() },
     });
   }
 
@@ -99,11 +98,11 @@ export async function POST(
   if (status !== "CONFIRMED" && status !== "PAID" && status !== "COMPLETED") {
     return NextResponse.json(
       {
-        error: "Payment not yet confirmed",
+        success: false,
         status: sessionDetail.status,
-        hint: "Wait a moment and try again, or check your Locus transaction.",
+        hint: "Payment not yet confirmed. Wait a moment and try again.",
       },
-      { status: 402 },
+      { status: 202 },
     );
   }
 
@@ -156,7 +155,6 @@ export async function POST(
 
   return NextResponse.json({
     success: true,
-    accessToken,
-    expiresAt: tokenExpiresAt.toISOString(),
+    data: { accessToken, expiresAt: tokenExpiresAt.toISOString() },
   });
 }
