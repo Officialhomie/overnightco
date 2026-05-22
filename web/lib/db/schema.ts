@@ -145,6 +145,7 @@ export const accessGrants = pgTable("access_grants", {
   locusSessionId: text("locus_session_id").notNull(),
   buyerType: buyerTypeEnum("buyer_type").notNull().default("HUMAN"),
   amountUsdc: text("amount_usdc").notNull(),
+  buyerEmail: text("buyer_email"),
   webhookSecret: text("webhook_secret"),
   accessToken: text("access_token"),
   tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
