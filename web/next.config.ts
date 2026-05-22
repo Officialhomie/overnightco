@@ -14,12 +14,30 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // Access endpoints — open for cross-origin access (Locus frontend)
+        source: "/api/access/:path*",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Access-Control-Allow-Methods", value: "POST, OPTIONS" },
+          { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization" },
+        ],
+      },
+      {
         // Agent product endpoints — open to all origins (agents call from anywhere)
         source: "/api/product/:path*",
         headers: [
           { key: "Access-Control-Allow-Origin", value: "*" },
           { key: "Access-Control-Allow-Methods", value: "GET, POST, OPTIONS" },
           { key: "Access-Control-Allow-Headers", value: "Content-Type, Accept, Authorization" },
+        ],
+      },
+      {
+        // Library endpoint — open for cross-origin access (Locus frontend)
+        source: "/api/library",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Access-Control-Allow-Methods", value: "GET, OPTIONS" },
+          { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization" },
         ],
       },
       {
@@ -37,6 +55,15 @@ const nextConfig: NextConfig = {
           { key: "Access-Control-Allow-Origin", value: "*" },
           { key: "Cache-Control", value: "public, max-age=300" },
           { key: "Content-Type", value: "text/plain; charset=utf-8" },
+        ],
+      },
+      {
+        // Human reader content pages — open for cross-origin access (Locus frontend)
+        source: "/product/:path*",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Access-Control-Allow-Methods", value: "GET, POST, OPTIONS" },
+          { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization" },
         ],
       },
       {
