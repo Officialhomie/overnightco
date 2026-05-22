@@ -105,10 +105,34 @@ export async function POST(
 
   // Fast path: webhook already confirmed this grant
   if (grant.confirmedAt && grant.accessToken) {
-    logger.info("product.confirm.already_confirmed", { grantId: grant.id, sessionId });
+    const now = new Date();
+    const isExpired = grant.tokenExpiresAt && grant.tokenExpiresAt < now;
+
+    if (!isExpired) {
+      logger.info("product.confirm.already_confirmed", { grantId: grant.id, sessionId });
+      return NextResponse.json({
+        success: true,
+        data: { accessToken: grant.accessToken, expiresAt: grant.tokenExpiresAt?.toISOString(), buyerEmail: grant.buyerEmail },
+      });
+    }
+
+    // Token expired — re-generate without re-checking Locus (payment already confirmed)
+    logger.info("product.confirm.token_refresh", { grantId: grant.id, sessionId });
+    const ttlSeconds = grant.buyerType === "HUMAN" ? 86400 : 604800;
+    const newToken = generateAccessToken(
+      { productId, buyerType: grant.buyerType, grantId: grant.id },
+      ttlSeconds,
+    );
+    const newExpiry = new Date(Date.now() + ttlSeconds * 1000);
+
+    await db
+      .update(accessGrants)
+      .set({ accessToken: newToken, tokenExpiresAt: newExpiry })
+      .where(eq(accessGrants.id, grant.id));
+
     return NextResponse.json({
       success: true,
-      data: { accessToken: grant.accessToken, expiresAt: grant.tokenExpiresAt?.toISOString() },
+      data: { accessToken: newToken, expiresAt: newExpiry.toISOString(), buyerEmail: grant.buyerEmail },
     });
   }
 
@@ -177,6 +201,6 @@ export async function POST(
 
   return NextResponse.json({
     success: true,
-    data: { accessToken, expiresAt: tokenExpiresAt.toISOString() },
+    data: { accessToken, expiresAt: tokenExpiresAt.toISOString(), buyerEmail: grant.buyerEmail },
   });
 }
