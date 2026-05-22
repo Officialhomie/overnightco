@@ -230,5 +230,23 @@ export async function POST(req: Request) {
     amountUsdc: grant.amountUsdc,
   });
 
+  // Auto-send email if buyerEmail was captured at subscribe time
+  if (grant.buyerEmail && grant.buyerType === "HUMAN") {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://overnightco.vercel.app";
+    try {
+      await fetch(`${appUrl}/api/access/send-link`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: grant.buyerEmail,
+          token: accessToken,
+          productId: grant.productId,
+        }),
+      });
+    } catch (err) {
+      logger.warn("locus.webhook.send_link_failed", { grantId: grant.id, error: String(err) });
+    }
+  }
+
   return new NextResponse("OK", { status: 200 });
 }
