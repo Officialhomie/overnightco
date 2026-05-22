@@ -14,6 +14,7 @@ export const dynamic = "force-dynamic";
 const SubscribeSchema = z.object({
   buyerType: z.enum(["HUMAN", "AGENT"]).default("HUMAN"),
   successUrl: z.string().url().optional(),
+  buyerEmail: z.string().email().optional(),
 });
 
 /**
@@ -69,7 +70,7 @@ export async function POST(
     );
   }
 
-  const { buyerType, successUrl } = parsed.data;
+  const { buyerType, successUrl, buyerEmail } = parsed.data;
   const amountUsdc =
     buyerType === "AGENT" ? product.agentPriceUsdc : product.humanPriceUsdc;
 
@@ -92,6 +93,7 @@ export async function POST(
       buyerType,
       amountUsdc,
       webhookSecret: webhookSecret ?? null,
+      buyerEmail: buyerEmail ?? null,
     });
 
     logger.info("product.subscribe.created", {
